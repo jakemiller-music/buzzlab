@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BuzzLab 2.0 - Dynamic Pitch Practice</title>
+    <title>BuzzLab - Long Tones</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
@@ -92,26 +92,6 @@
             border-color: #2563eb; /* blue-600 */
         }
 
-        /* Custom toggle switch for Random Order */
-        .toggle-bg:after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            background: white;
-            border-radius: 9999px;
-            width: 1.25rem;
-            height: 1.25rem;
-            transition: transform 0.2s ease-in-out;
-        }
-        input:checked + .toggle-bg:after {
-            transform: translateX(100%);
-        }
-        input:checked + .toggle-bg {
-            background-color: #60a5fa;
-            border-color: #60a5fa;
-        }
-
     </style>
     <!-- Pre-connect for Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -126,8 +106,8 @@
         <!-- ===== Screen: Instrument Selection ===== -->
         <div id="instrument-selection-screen" class="flex flex-col items-center justify-center text-center h-full">
             <header class="mb-8 md:mb-12">
-                <h1 class="text-4xl md:text-6xl font-bold text-white tracking-tight">BuzzLab</h1>
-                <p class="text-lg md:text-xl text-blue-300 mt-2">Select your instrument to begin buzzing practice</p>
+                <h1 class="text-4xl md:text-6xl font-bold text-white tracking-tight">BuzzLab: Long Tones</h1>
+                <p class="text-lg md:text-xl text-blue-300 mt-2">Select your instrument to begin.</p>
             </header>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-2xl">
                 <!-- Instrument cards will be dynamically inserted here -->
@@ -138,41 +118,15 @@
         <div id="exercise-selection-screen" class="hidden flex-col items-center justify-center text-center h-full">
             <header class="mb-8">
                 <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Create Your Exercise</h1>
-                <p class="text-lg md:text-xl text-blue-300 mt-2">Choose an exercise type to begin.</p>
+                <p class="text-lg md:text-xl text-blue-300 mt-2">Tap the notes you want to practice.</p>
             </header>
             <div class="w-full max-w-3xl p-4 bg-slate-800 rounded-lg">
-                <!-- Exercise Type Selector -->
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <button id="select-long-tones" class="selectable-btn p-4 rounded-md text-xl font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors">Long Tones</button>
-                    <button id="select-contours" class="selectable-btn p-4 rounded-md text-xl font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors">Contours</button>
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <label for="repetitions-input" class="text-lg text-gray-300">Successful reps per note:</label>
+                    <input type="number" id="repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                
-                <!-- Long Tones Options -->
-                <div id="long-tones-options" class="hidden">
-                    <div class="flex items-center justify-center gap-3 mb-4">
-                        <label for="repetitions-input" class="text-lg text-gray-300">Successful reps per note:</label>
-                        <input type="number" id="repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div id="note-selector" class="grid grid-cols-4 sm:grid-cols-8 gap-3 p-4 bg-slate-900/50 rounded-md"></div>
-                    <button id="start-long-tones-btn" class="mt-4 w-full p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Long Tones</button>
-                </div>
-
-                <!-- Contours Options -->
-                <div id="contours-options" class="hidden">
-                     <div class="flex items-center justify-center gap-3 mb-4">
-                        <label for="contour-repetitions-input" class="text-lg text-gray-300">Successful reps per pattern:</label>
-                        <input type="number" id="contour-repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div id="contour-range-selector" class="grid grid-cols-3 gap-3 mb-4 p-4 bg-slate-900/50 rounded-md"></div>
-                     <div class="flex items-center justify-center gap-4 mb-4">
-                        <label for="random-order-toggle" class="text-lg text-gray-300">Random Order:</label>
-                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="random-order-toggle" id="random-order-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer hidden"/>
-                            <label for="random-order-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-600 cursor-pointer toggle-bg border-2 border-slate-500"></label>
-                        </div>
-                    </div>
-                    <button id="start-contours-btn" class="mt-4 w-full p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Contours</button>
-                </div>
+                <div id="note-selector" class="grid grid-cols-4 sm:grid-cols-8 gap-3 p-4 bg-slate-900/50 rounded-md"></div>
+                <button id="start-long-tones-btn" class="mt-4 w-full p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Long Tones</button>
             </div>
              <button id="back-to-instruments-btn" class="mt-6 text-blue-300 hover:text-white transition-colors">← Back to Instrument Selection</button>
         </div>
@@ -182,7 +136,7 @@
         <div id="exercise-screen" class="hidden flex-col h-full w-full">
             <!-- Exercise Info Header -->
             <div class="flex-shrink-0 mb-2 text-center">
-                <p id="current-exercise-title" class="text-lg text-gray-400">Current Note:</p>
+                <p class="text-lg text-gray-400">Current Note:</p>
                 <p id="current-note-display" class="text-4xl font-bold text-blue-300">--</p>
                 <div id="repetition-progress" class="flex justify-center items-center gap-2 h-6 mt-1"></div>
                 <div id="pitch-queue-display" class="h-6 mt-1 text-sm text-gray-500"></div>
@@ -332,7 +286,7 @@
 
     <script type="module">
         // ================================================================= //
-        // ===== BUZZLAB 2.0 - EXERCISE-DRIVEN ARCHITECTURE ===== //
+        // ===== BUZZLAB 2.0 - LONG TONES ===== //
         // ================================================================= //
 
         // ===== 1. Constants and Libraries ===== //
@@ -372,8 +326,8 @@
         // ===== 2. DOM Element References ===== //
         const {
             instrumentScreen, exerciseSelectionScreen, exerciseScreen, startStopBtn,
-            tempoSlider, tempoValue, backToInstrumentsBtn, selectLongTones, selectContours,
-            longTonesOptions, contoursOptions, noteSelector, startLongTonesBtn, repetitionsInput, 
+            tempoSlider, tempoValue, backToInstrumentsBtn,
+            noteSelector, startLongTonesBtn, repetitionsInput, 
             currentNoteDisplay, pitchQueueDisplay, repetitionProgress, completeModal, 
             backToSelectionBtn, changeInstrumentBtn, backFromExerciseBtn, smoothingSlider, 
             smoothingValue, toleranceSlider, toleranceValue, yinThresholdSlider, 
@@ -382,14 +336,12 @@
             metronomeVolumeSlider, metronomeVolumeValue, targetOpacitySlider, 
             targetOpacityValue, scrubberBrightnessSlider, scrubberBrightnessValue, 
             summaryDurationSlider, summaryDurationValue, micModal, micStep1, micStep2, 
-            micStep3, micAgreeBtn,
-            contourRangeSelector, startContoursBtn, randomOrderToggle, currentExerciseTitle,
-            contourRepetitionsInput
+            micStep3, micAgreeBtn, currentExerciseTitle,
         } = Object.fromEntries(
             [
                 'instrument-selection-screen', 'exercise-selection-screen', 'exercise-screen', 'start-stop-btn',
-                'tempo-slider', 'tempo-value', 'back-to-instruments-btn', 'select-long-tones', 'select-contours',
-                'long-tones-options', 'contours-options', 'note-selector', 'start-long-tones-btn', 'repetitions-input', 
+                'tempo-slider', 'tempo-value', 'back-to-instruments-btn', 
+                'note-selector', 'start-long-tones-btn', 'repetitions-input', 
                 'current-note-display', 'pitch-queue-display', 'repetition-progress', 'complete-modal', 
                 'back-to-selection-btn', 'change-instrument-btn', 'back-from-exercise-btn', 'smoothing-slider', 
                 'smoothing-value', 'tolerance-slider', 'tolerance-value', 'yin-threshold-slider', 
@@ -398,8 +350,7 @@
                 'metronome-volume-value', 'target-opacity-slider', 'target-opacity-value',
                 'scrubber-brightness-slider', 'scrubber-brightness-value', 'summary-duration-slider',
                 'summary-duration-value', 'mic-modal', 'mic-step-1', 'mic-step-2', 'mic-step-3', 'mic-agree-btn',
-                'contour-range-selector', 'start-contours-btn', 'random-order-toggle', 'current-exercise-title',
-                'contour-repetitions-input'
+                 'current-exercise-title',
             ].map(id => [id.replace(/-(\w)/g, (m, g) => g.toUpperCase()), document.getElementById(id)])
         );
         const difficultyButtons = document.querySelectorAll('.difficulty-btn');
@@ -418,8 +369,6 @@
             currentScreen: 'instrument', 
             ui: { 
                 selectedPitchKeys: [],
-                selectedContourRange: null,
-                isRandomOrder: false,
             }, 
             instrument: null, running: false,
             exercise: { 
@@ -809,21 +758,6 @@
             targetOpacitySlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.targetZoneOpacity = v / 100; targetOpacityValue.textContent = `${v}%`; });
             scrubberBrightnessSlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.scrubberBrightness = v / 100; scrubberBrightnessValue.textContent = `${v}%`; });
             summaryDurationSlider.addEventListener('input', e => { const v = parseInt(e.target.value) / 10; state.summaryDuration = v; summaryDurationValue.textContent = `${v.toFixed(1)}s`; });
-             // Exercise Type Selection
-            selectLongTones.addEventListener('click', () => {
-                selectLongTones.classList.add('selected');
-                selectContours.classList.remove('selected');
-                longTonesOptions.classList.remove('hidden');
-                contoursOptions.classList.add('hidden');
-                state.exercise.type = 'longTone';
-            });
-            selectContours.addEventListener('click', () => {
-                selectContours.classList.add('selected');
-                selectLongTones.classList.remove('selected');
-                contoursOptions.classList.remove('hidden');
-                longTonesOptions.classList.add('hidden');
-                state.exercise.type = 'contour';
-            });
         }
         
         async function requestMicPermission() {
@@ -862,12 +796,6 @@
             const selectablePitches = PITCH_SETS[pitchSetKey];
             state.ui.selectedPitchKeys = [...selectablePitches].slice(0, 5); // Default to first 5 notes
             setupPitchSelector(selectablePitches); // Re-render the note buttons for the correct octave
-             // Default to Long Tones view
-            selectLongTones.classList.add('selected');
-            selectContours.classList.remove('selected');
-            longTonesOptions.classList.remove('hidden');
-            contoursOptions.classList.add('hidden');
-            state.exercise.type = 'longTone';
             showScreen('exercise-selection-screen');
         }
 
@@ -896,5 +824,4 @@
 
 </body>
 </html>
-
 
