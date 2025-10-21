@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuzzLab 2.0 - Dynamic Pitch Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        /* Custom styles for a sleeker dark theme and specific app elements */
+        html, body {
+            overscroll-behavior: none; /* Prevents pull-to-refresh */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a; /* Almost black */
+        }
+        
+        /* Custom scrollbar for a modern feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Styling for the range sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #374151; /* gray-700 */
+            border-radius: 4px;
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #60a5fa; /* blue-400 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #111827; /* gray-900 */
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #60a5fa; /* blue-400 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #111827; /* gray-900 */
+        }
+
+        /* Hide the default details marker */
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* Animated arrow for mic permission */
+        @keyframes point-up-left {
+            0%, 100% { transform: translate(0, 0) rotate(-45deg); }
+            50% { transform: translate(-5px, -5px) rotate(-45deg); }
+        }
+        .animated-arrow {
+            width: 3rem;
+            height: 3rem;
+            border-left: 4px solid white;
+            border-bottom: 4px solid white;
+            animation: point-up-left 1.5s infinite;
+        }
+        
+        /* Note selection button style */
+        .note-btn.selected {
+            background-color: #60a5fa; /* blue-400 */
+            color: white;
+            border-color: #2563eb; /* blue-600 */
+        }
+
+    </style>
+    <!-- Pre-connect for Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="h-full w-full bg-slate-900 text-gray-200 flex items-center justify-center p-4 antialiased">
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="w-full max-w-4xl h-full flex flex-col">
+
+        <!-- ===== Screen: Instrument Selection ===== -->
+        <div id="instrument-selection-screen" class="flex flex-col items-center justify-center text-center h-full">
+            <header class="mb-8 md:mb-12">
+                <h1 class="text-4xl md:text-6xl font-bold text-white tracking-tight">BuzzLab</h1>
+                <p class="text-lg md:text-xl text-blue-300 mt-2">Select your instrument to begin buzzing practice</p>
+            </header>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-2xl">
+                <!-- Instrument cards will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- ===== Screen: Exercise Selection ===== -->
+        <div id="exercise-selection-screen" class="hidden flex-col items-center justify-center text-center h-full">
+            <header class="mb-8 md:mb-12">
+                <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Create Your Exercise</h1>
+                <p class="text-lg md:text-xl text-blue-300 mt-2">Tap the notes you want to practice.</p>
+            </header>
+            <div class="w-full max-w-3xl p-4 bg-slate-800 rounded-lg">
+                 <!-- Repetitions Selector -->
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <label for="repetitions-input" class="text-lg text-gray-300">Successful repetitions per note:</label>
+                    <input type="number" id="repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <!-- Note Selection Buttons -->
+                <div id="note-selector" class="grid grid-cols-4 sm:grid-cols-8 gap-3 p-4 bg-slate-900/50 rounded-md">
+                    <!-- Note buttons will be dynamically inserted here -->
+                </div>
+                 <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                    <button id="start-long-tones-btn" class="flex-1 p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Long Tones</button>
+                    <button id="start-contour-btn" class="flex-1 p-4 bg-slate-600 hover:bg-slate-500 rounded-md text-gray-300 font-bold">Simple Contour (Coming Soon)</button>
+                </div>
+            </div>
+             <button id="back-to-instruments-btn" class="mt-6 text-blue-300 hover:text-white transition-colors">← Back to Instrument Selection</button>
+        </div>
+
+
+        <!-- ===== Screen: Exercise ===== -->
+        <div id="exercise-screen" class="hidden flex-col h-full w-full">
+            <!-- Exercise Info Header -->
+            <div class="flex-shrink-0 mb-2 text-center">
+                <p class="text-lg text-gray-400">Current Note:</p>
+                <p id="current-note-display" class="text-4xl font-bold text-blue-300">--</p>
+                <div id="repetition-progress" class="flex justify-center items-center gap-2 h-6 mt-1"></div>
+                <div id="pitch-queue-display" class="h-6 mt-1 text-sm text-gray-500"></div>
+            </div>
+
+            <!-- Canvas for Visualization -->
+            <div class="flex-grow w-full bg-gray-900 rounded-lg shadow-2xl overflow-hidden border border-slate-700">
+                <canvas id="visualizer-canvas" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="flex-shrink-0 mt-4 p-4 bg-slate-800 rounded-lg shadow-lg border border-slate-700">
+                <!-- Main Controls -->
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <button id="start-stop-btn" class="w-32 h-12 text-xl font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all duration-200 shadow-md">Start</button>
+                        <button id="back-from-exercise-btn" class="w-32 h-12 text-xl font-bold bg-slate-600 hover:bg-slate-500 text-white rounded-md transition-all duration-200 shadow-md">Back</button>
+                    </div>
+                    
+                    <div class="w-full md:flex-1 flex items-center gap-3">
+                        <span class="text-sm font-medium text-gray-400 w-12 text-center">Tempo</span>
+                        <input id="tempo-slider" type="range" min="40" max="120" value="60" class="flex-1">
+                        <span id="tempo-value" class="text-lg font-semibold text-white w-12 text-center">60</span>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2">
+                        <button data-difficulty="easy" class="difficulty-btn bg-green-500 ring-2 ring-white shadow-lg text-white font-semibold py-2 px-4 rounded-md transition-all">Easy</button>
+                        <button data-difficulty="medium" class="difficulty-btn bg-slate-600 hover:bg-slate-500 text-gray-300 font-semibold py-2 px-4 rounded-md transition-all">Medium</button>
+                        <button data-difficulty="hard" class="difficulty-btn bg-slate-600 hover:bg-slate-500 text-gray-300 font-semibold py-2 px-4 rounded-md transition-all">Hard</button>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings (Collapsible) -->
+                <details class="mt-4">
+                    <summary class="cursor-pointer text-sm text-gray-400 hover:text-white transition-colors text-center md:text-left">Advanced Settings</summary>
+                    <div class="mt-3 pt-3 border-t border-slate-700 flex flex-col items-center gap-3">
+                         <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Pitch Smoothing</span>
+                            <input id="smoothing-slider" type="range" min="1" max="1000" value="52" class="flex-1">
+                            <span id="smoothing-value" class="text-lg font-semibold text-white w-12 text-center">52</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Signal Threshold</span>
+                            <input id="tolerance-slider" type="range" min="1" max="20" value="3" class="flex-1">
+                            <span id="tolerance-value" class="text-lg font-semibold text-white w-12 text-center">0.03</span>
+                        </div>
+                         <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">YIN Threshold</span>
+                            <input id="yin-threshold-slider" type="range" min="1" max="50" value="20" class="flex-1">
+                            <span id="yin-threshold-value" class="text-lg font-semibold text-white w-12 text-center">0.20</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Visual Pitch Range</span>
+                            <input id="visual-range-slider" type="range" min="100" max="2400" step="100" value="800" class="flex-1">
+                            <span id="visual-range-value" class="text-lg font-semibold text-white w-12 text-center">800</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Line Thickness</span>
+                            <input id="line-thickness-slider" type="range" min="1" max="25" value="6" class="flex-1">
+                            <span id="line-thickness-value" class="text-lg font-semibold text-white w-12 text-center">6</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Color "Close" Mult.</span>
+                            <input id="color-multiplier-slider" type="range" min="10" max="100" value="30" class="flex-1">
+                            <span id="color-multiplier-value" class="text-lg font-semibold text-white w-12 text-center">3.0</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Metronome Volume</span>
+                            <input id="metronome-volume-slider" type="range" min="-60" max="6" value="-6" class="flex-1">
+                            <span id="metronome-volume-value" class="text-lg font-semibold text-white w-12 text-center">-6 dB</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Target Zone Opacity</span>
+                            <input id="target-opacity-slider" type="range" min="0" max="100" value="15" class="flex-1">
+                            <span id="target-opacity-value" class="text-lg font-semibold text-white w-12 text-center">15%</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Scrubber Brightness</span>
+                            <input id="scrubber-brightness-slider" type="range" min="0" max="100" value="80" class="flex-1">
+                            <span id="scrubber-brightness-value" class="text-lg font-semibold text-white w-12 text-center">80%</span>
+                        </div>
+                        <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-400 w-36 text-right">Summary Duration</span>
+                            <input id="summary-duration-slider" type="range" min="0" max="50" value="20" class="flex-1">
+                            <span id="summary-duration-value" class="text-lg font-semibold text-white w-12 text-center">2.0s</span>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== Modals ===== -->
+    <div id="modal-container">
+        <!-- Mic Modal -->
+        <div id="mic-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div id="mic-modal-content" class="bg-slate-800 rounded-xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-600">
+                <!-- Step 1: Explanation -->
+                <div id="mic-step-1">
+                    <svg class="mx-auto h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    <h3 class="text-2xl font-bold mt-4 text-white">Microphone Access</h3>
+                    <p class="mt-2 text-gray-300">BuzzLab needs to hear your mouthpiece to give you real-time feedback. Your audio is processed locally and is never recorded or stored.</p>
+                    <button id="mic-agree-btn" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">I Understand</button>
+                </div>
+                <!-- Step 2: "Look Up!" Prompt -->
+                <div id="mic-step-2" class="hidden">
+                    <h3 class="text-2xl font-bold text-white">Look Up!</h3>
+                    <p class="mt-2 text-gray-300">Please click "Allow" in the pop-up at the top-left of your screen.</p>
+                    <div class="mt-8 flex justify-center items-center">
+                        <div class="animated-arrow"></div>
+                    </div>
+                </div>
+                <!-- Step 3: Denied Instructions -->
+                <div id="mic-step-3" class="hidden">
+                     <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                    <h3 class="text-2xl font-bold mt-4 text-white">Permission Denied</h3>
+                    <p class="mt-2 text-gray-300">You've blocked microphone access. To use BuzzLab, you'll need to enable it manually.</p>
+                    <div class="mt-4 text-left bg-gray-900 p-4 rounded-lg border border-slate-700">
+                        <p class="font-semibold">How to fix it:</p>
+                        <ol class="list-decimal list-inside mt-2 text-sm">
+                            <li>Click the lock icon <svg class="inline h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2V7a5 5 0 00-5-5zm0 2a3 3 0 013 3v2H7V7a3 3 0 013-3z"></path></svg> in the address bar.</li>
+                            <li>Turn on the toggle switch for the Microphone.</li>
+                            <li>Reload the page.</li>
+                        </ol>
+                    </div>
+                    <button onclick="location.reload()" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Reload Page</button>
+                </div>
+            </div>
+        </div>
+        <!-- Exercise Complete Modal -->
+        <div id="complete-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+             <div class="bg-slate-800 rounded-xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-600">
+                <svg class="mx-auto h-12 w-12 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="text-2xl font-bold mt-4 text-white">Exercise Complete!</h3>
+                <p class="mt-2 text-gray-300">Great work! You've completed all the notes.</p>
+                <div class="mt-6 flex flex-col gap-3">
+                    <button id="back-to-selection-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Choose Another Exercise</button>
+                    <button id="change-instrument-btn" class="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Change Instrument</button>
+                </div>
+             </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // ================================================================= //
+        // ===== BUZZLAB 2.0 - EXERCISE-DRIVEN ARCHITECTURE ===== //
+        // ================================================================= //
+
+        // ===== 1. Constants and Libraries ===== //
+
+        const CONSTANTS = {
+            LOOP_DURATION_MEASURES: 2,
+            REQUIRED_HOLD_DURATION_SECONDS: 2.0, 
+        };
+
+        const PITCH_LIBRARY = {
+            'Bb1': { name: 'B♭', transposed: { F: 'F' }, frequency: 58.27 },
+            'C2':  { name: 'C',  transposed: { F: 'G' }, frequency: 65.41 },
+            'D2':  { name: 'D',  transposed: { F: 'A' }, frequency: 73.42 },
+            'Eb2': { name: 'E♭', transposed: { F: 'B♭' }, frequency: 77.78 },
+            'F2':  { name: 'F',  transposed: { F: 'C' }, frequency: 87.31 },
+            'G2':  { name: 'G',  transposed: { F: 'D' }, frequency: 98.00 },
+            'A2':  { name: 'A',  transposed: { F: 'E' }, frequency: 110.00 },
+            'Bb2': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 116.54 },
+            'C3':  { name: 'C',  transposed: { Bb: 'D', F: 'G' }, frequency: 130.81 },
+            'D3':  { name: 'D',  transposed: { Bb: 'E', F: 'A' }, frequency: 146.83 },
+            'Eb3': { name: 'E♭', transposed: { Bb: 'F', F: 'B♭' }, frequency: 155.56 },
+            'F3':  { name: 'F',  transposed: { Bb: 'G', F: 'C' }, frequency: 174.61 },
+            'G3':  { name: 'G',  transposed: { Bb: 'A', F: 'D' }, frequency: 196.00 },
+            'A3':  { name: 'A',  transposed: { Bb: 'B', F: 'E' }, frequency: 220.00 },
+            'Bb3': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 233.08 },
+            'C4':  { name: 'C',  transposed: { Bb: 'D', F: 'G' }, frequency: 261.63 },
+            'D4':  { name: 'D',  transposed: { Bb: 'E', F: 'A' }, frequency: 293.66 },
+            'Eb4': { name: 'E♭', transposed: { Bb: 'F', F: 'B♭' }, frequency: 311.13 },
+            'F4':  { name: 'F',  transposed: { Bb: 'G', F: 'C' }, frequency: 349.23 },
+            'G4':  { name: 'G',  transposed: { Bb: 'A', F: 'D' }, frequency: 392.00 },
+            'A4':  { name: 'A',  transposed: { Bb: 'B', F: 'E' }, frequency: 440.00 },
+            'Bb4': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 466.16 },
+        };
+
+        const PITCH_SETS = {
+            high: ['F3', 'G3', 'A3', 'Bb3', 'C4', 'D4', 'Eb4', 'F4'],
+            low: ['Bb2', 'C3', 'D3', 'Eb3', 'F3'],
+            tuba: ['Bb1', 'C2', 'D2', 'Eb2', 'F2'],
+        };
+ PITCH_SETS.horn = ['F3', 'G3', 'A3', 'Bb3', 'C4', 'D4', 'Eb4', 'F4'];
+
+
+        const INSTRUMENTS = {
+            trumpet: { name: 'Trumpet (B♭)', pitchSet: 'high', transposition: 'Bb' },
+            horn: { name: 'French Horn (F)', pitchSet: 'high', transposition: 'F' },
+            trombone: { name: 'Trombone / Baritone', pitchSet: 'low', transposition: null },
+            tuba: { name: 'Tuba', pitchSet: 'tuba', transposition: null },
+        };
+
+        const DIFFICULTY_SETTINGS = {
+            easy: { cents: 100 },
+            medium: { cents: 60 },
+            hard: { cents: 30 }
+        };
+
+        // ===== 2. DOM Element References ===== //
+        const {
+            instrumentScreen, exerciseSelectionScreen, exerciseScreen, startStopBtn,
+            tempoSlider, tempoValue, backToInstrumentsBtn,
+            noteSelector, startLongTonesBtn, repetitionsInput, currentNoteDisplay,
+            pitchQueueDisplay, repetitionProgress, completeModal, backToSelectionBtn,
+            changeInstrumentBtn, backFromExerciseBtn, smoothingSlider, smoothingValue,
+            toleranceSlider, toleranceValue, yinThresholdSlider, yinThresholdValue,
+            visualRangeSlider, visualRangeValue, lineThicknessSlider, lineThicknessValue,
+            colorMultiplierSlider, colorMultiplierValue, metronomeVolumeSlider,
+            metronomeVolumeValue, targetOpacitySlider, targetOpacityValue,
+            scrubberBrightnessSlider, scrubberBrightnessValue, summaryDurationSlider,
+            summaryDurationValue, micModal, micStep1, micStep2, micStep3, micAgreeBtn
+        } = Object.fromEntries(
+            [
+                'instrument-selection-screen', 'exercise-selection-screen', 'exercise-screen', 'start-stop-btn',
+                'tempo-slider', 'tempo-value', 'back-to-instruments-btn',
+                'note-selector', 'start-long-tones-btn', 'repetitions-input', 'current-note-display',
+                'pitch-queue-display', 'repetition-progress', 'complete-modal', 'back-to-selection-btn',
+                'change-instrument-btn', 'back-from-exercise-btn', 'smoothing-slider', 'smoothing-value',
+                'tolerance-slider', 'tolerance-value', 'yin-threshold-slider', 'yin-threshold-value',
+                'visual-range-slider', 'visual-range-value', 'line-thickness-slider', 'line-thickness-value',
+                'color-multiplier-slider', 'color-multiplier-value', 'metronome-volume-slider',
+                'metronome-volume-value', 'target-opacity-slider', 'target-opacity-value',
+                'scrubber-brightness-slider', 'scrubber-brightness-value', 'summary-duration-slider',
+                'summary-duration-value', 'mic-modal', 'mic-step-1', 'mic-step-2', 'mic-step-3', 'mic-agree-btn'
+            ].map(id => [id.replace(/-(\w)/g, (m, g) => g.toUpperCase()), document.getElementById(id)])
+        );
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        const visualizerCanvas = document.getElementById('visualizer-canvas');
+        const ctx = visualizerCanvas.getContext('2d');
+        
+        // ===== 3. Application State ===== //
+
+        const DEFAULTS = {
+            tempo: 60,
+            difficulty: 'easy',
+            smoothingSamples: 52,
+            pitchTolerance: 0.03,
+            yinThreshold: 0.20,
+            visualCentsRange: 800,
+            lineThickness: 6,
+            colorCloseMultiplier: 3.0,
+            metronomeVolume: -6,
+            targetZoneOpacity: 0.15,
+            scrubberBrightness: 0.8,
+            summaryDuration: 2.0,
+        };
+
+        const state = {
+            currentScreen: 'instrument',
+            ui: { selectedPitchKeys: [] },
+            instrument: null,
+            running: false,
+            exercise: { 
+                type: 'longTone', 
+                pitches: [], 
+                currentPitchIndex: 0, 
+                isComplete: false,
+                repetitionsRequired: 1,
+                currentPitchRepetitionsCompleted: 0,
+            },
+            currentBeat: 0,
+            phase: 'listen',
+            buzzPitchHistory: [],
+            lastSmoothedPitch: -1,
+            lastBuzzSummary: { score: 0, timestamp: 0 },
+            pitchInTuneHoldStart: null,
+            isPitchHeldSuccessfully: false,
+            // --- Settings ---
+            tempo: DEFAULTS.tempo,
+            difficulty: DEFAULTS.difficulty,
+            smoothingSamples: DEFAULTS.smoothingSamples,
+            pitchTolerance: DEFAULTS.pitchTolerance,
+            yinThreshold: DEFAULTS.yinThreshold,
+            visualCentsRange: DEFAULTS.visualCentsRange,
+            lineThickness: DEFAULTS.lineThickness,
+            colorCloseMultiplier: DEFAULTS.colorCloseMultiplier,
+            metronomeVolume: DEFAULTS.metronomeVolume,
+            targetZoneOpacity: DEFAULTS.targetZoneOpacity,
+            scrubberBrightness: DEFAULTS.scrubberBrightness,
+            summaryDuration: DEFAULTS.summaryDuration,
+        };
+        
+        // ===== 4. Audio Components ===== //
+        let userMedia, micAnalyser, metronome, targetPitchSynth;
+        
+        function autoCorrelate(buf, sampleRate) {
+            const SIZE = buf.length; let rms = 0; for (let i = 0; i < SIZE; i++) { const val = buf[i]; rms += val * val; }
+            rms = Math.sqrt(rms / SIZE); if (rms < state.pitchTolerance) return -1;
+            const yinBufferSize = SIZE / 2; const yinBuffer = new Float32Array(yinBufferSize);
+            let runningSum = 0; yinBuffer[0] = 1;
+            for (let tau = 1; tau < yinBufferSize; tau++) {
+                let squaredDifference = 0;
+                for (let i = 0; i < yinBufferSize; i++) { const delta = buf[i] - buf[i + tau]; squaredDifference += delta * delta; }
+                runningSum += squaredDifference; yinBuffer[tau] = squaredDifference / (runningSum / tau);
+            }
+            const threshold = state.yinThreshold; let tauEstimate = -1;
+            for (let tau = 2; tau < yinBufferSize; tau++) {
+                if (yinBuffer[tau] < threshold) {
+                    while (tau + 1 < yinBufferSize && yinBuffer[tau + 1] < yinBuffer[tau]) { tau++; }
+                    tauEstimate = tau; break;
+                }
+            }
+            if (tauEstimate === -1) return -1;
+            let betterTau; const x0 = tauEstimate - 1; const x2 = tauEstimate + 1;
+            if (x2 >= yinBufferSize) { betterTau = tauEstimate; } else {
+                const s0 = yinBuffer[x0]; const s1 = yinBuffer[tauEstimate]; const s2 = yinBuffer[x2];
+                betterTau = tauEstimate + (s2 - s0) / (2 * (2 * s1 - s2 - s0));
+            }
+            return sampleRate / betterTau;
+        }
+
+        function getSmoothedPitch(currentFreq) {
+            const alpha = 2 / (state.smoothingSamples + 1);
+            if (currentFreq < 0) { return state.lastSmoothedPitch > 0 ? state.lastSmoothedPitch : -1; }
+            if (state.lastSmoothedPitch < 0) { state.lastSmoothedPitch = currentFreq; return currentFreq; }
+            const smoothed = alpha * currentFreq + (1 - alpha) * state.lastSmoothedPitch;
+            state.lastSmoothedPitch = smoothed; return smoothed;
+        }
+
+        // ===== 5. Core Application Logic & State Management ===== //
+        
+        let mainLoop;
+        function toggleApp(shouldStart) {
+            const isCurrentlyRunning = state.running;
+            state.running = shouldStart !== undefined ? shouldStart : !state.running;
+
+            if (state.running && !isCurrentlyRunning) {
+                startStopBtn.textContent = 'Stop'; startStopBtn.classList.replace('bg-blue-600', 'bg-red-600'); startStopBtn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
+                backFromExerciseBtn.classList.add('hidden');
+                Tone.Transport.loop = true; Tone.Transport.loopEnd = `${CONSTANTS.LOOP_DURATION_MEASURES}m`; Tone.Transport.bpm.value = state.tempo;
+                
+                mainLoop = new Tone.Loop(time => {
+                    const [measure, beat] = Tone.Transport.position.split(':').map(Number);
+                    state.currentBeat = Math.floor(beat);
+                    const isDownbeat = state.currentBeat === 0;
+                    metronome.triggerAttackRelease(isDownbeat ? 'C2' : 'C1', '8n', time, isDownbeat ? 1 : 0.5);
+                    
+                    if (measure % 2 === 0) { // LISTEN PHASE
+                        if (state.phase === 'buzz') {
+                            calculateBuzzSummary();
+                            if (state.isPitchHeldSuccessfully) { advanceToNextRepetition(); }
+                        }
+                        state.phase = 'listen';
+                        if (state.currentBeat < 3 && beat - state.currentBeat < 0.1) {
+                            targetPitchSynth.triggerAttack(state.exercise.pitches[state.exercise.currentPitchIndex].frequency, time);
+                        } else { targetPitchSynth.triggerRelease(time); }
+                    } else { // BUZZ PHASE
+                        state.phase = 'buzz';
+                        if (state.currentBeat === 0 && beat < 0.1) {
+                            state.buzzPitchHistory = []; state.lastSmoothedPitch = -1;
+                            state.pitchInTuneHoldStart = null; state.isPitchHeldSuccessfully = false; // Reset for new buzz
+                        }
+                    }
+                }, '4n').start(0);
+
+                Tone.Transport.start(); requestAnimationFrame(drawLoop);
+            } else if (!state.running && isCurrentlyRunning) {
+                startStopBtn.textContent = 'Start'; startStopBtn.classList.replace('bg-red-600', 'bg-blue-600'); startStopBtn.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+                backFromExerciseBtn.classList.remove('hidden');
+                if (mainLoop) {
+                    mainLoop.stop(0);
+                    mainLoop.dispose();
+                    mainLoop = null;
+                }
+                if(targetPitchSynth) targetPitchSynth.triggerRelease();
+                Tone.Transport.stop(); Tone.Transport.cancel(0); Tone.Transport.loop = false;
+                state.buzzPitchHistory = []; drawIdleState();
+            }
+        }
+        
+        function calculateBuzzSummary() {
+            if (state.buzzPitchHistory.length === 0) { state.lastBuzzSummary = { score: 0, timestamp: Tone.now() }; return; }
+            const difficultyCents = DIFFICULTY_SETTINGS[state.difficulty].cents;
+            const inTuneFrames = state.buzzPitchHistory.filter(p => p.cents !== null && Math.abs(p.cents) < difficultyCents).length;
+            const totalFramesWithSound = state.buzzPitchHistory.filter(p => p.cents !== null).length;
+            const score = totalFramesWithSound > 0 ? inTuneFrames / totalFramesWithSound : 0;
+            state.lastBuzzSummary = { score: score, timestamp: Tone.now() };
+        }
+
+        function setupExercise(pitchKeys) {
+            state.exercise.pitches = pitchKeys.map(key => PITCH_LIBRARY[key]);
+            state.exercise.currentPitchIndex = 0; 
+            state.exercise.currentPitchRepetitionsCompleted = 0;
+            state.exercise.isComplete = false;
+            updateNoteDisplays();
+        }
+
+        function advanceToNextRepetition() {
+            if (state.exercise.isComplete) return;
+            state.exercise.currentPitchRepetitionsCompleted++;
+            if (state.exercise.currentPitchRepetitionsCompleted >= state.exercise.repetitionsRequired) {
+                if (state.exercise.currentPitchIndex < state.exercise.pitches.length - 1) {
+                    state.exercise.currentPitchIndex++;
+                    state.exercise.currentPitchRepetitionsCompleted = 0;
+                } else {
+                    state.exercise.isComplete = true;
+                    toggleApp(false);
+                    completeModal.classList.remove('hidden');
+                }
+            }
+            updateNoteDisplays();
+        }
+
+        function getDisplayName(pitchId) {
+            const pitch = PITCH_LIBRARY[pitchId];
+            if (!pitch) return '';
+            const instrumentType = state.instrument ? state.instrument.transposition : null;
+            if (instrumentType && pitch.transposed && pitch.transposed[instrumentType]) {
+                return pitch.transposed[instrumentType];
+            }
+            return pitch.name;
+        }
+
+        function updateNoteDisplays() {
+            if (state.exercise.isComplete || !state.exercise.pitches[state.exercise.currentPitchIndex]) {
+                 currentNoteDisplay.textContent = '--';
+                 pitchQueueDisplay.textContent = 'All notes complete!';
+                 updateRepetitionDisplay();
+                return;
+            };
+            
+            const currentPitchId = Object.keys(PITCH_LIBRARY).find(key => PITCH_LIBRARY[key].frequency === state.exercise.pitches[state.exercise.currentPitchIndex].frequency);
+            currentNoteDisplay.textContent = getDisplayName(currentPitchId);
+
+            const repsRequired = state.exercise.repetitionsRequired;
+            const repsCompleted = state.exercise.currentPitchRepetitionsCompleted;
+            let queueText = `Repetition ${repsCompleted + 1} of ${repsRequired}.`;
+
+            const nextPitchIndex = state.exercise.currentPitchIndex + 1;
+            if (repsCompleted + 1 >= repsRequired) {
+                 if (nextPitchIndex < state.exercise.pitches.length) {
+                    const nextPitchId = Object.keys(PITCH_LIBRARY).find(key => PITCH_LIBRARY[key].frequency === state.exercise.pitches[nextPitchIndex].frequency);
+                    queueText += ` Next up: ${getDisplayName(nextPitchId)}`;
+                } else {
+                    queueText = 'Final Repetition!';
+                }
+            }
+            pitchQueueDisplay.textContent = queueText;
+            updateRepetitionDisplay();
+        }
+
+        function updateRepetitionDisplay() {
+            const repsRequired = state.exercise.repetitionsRequired;
+            const repsCompleted = state.exercise.currentPitchRepetitionsCompleted;
+            repetitionProgress.innerHTML = '';
+            for (let i = 0; i < repsRequired; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'w-4 h-4 rounded-full transition-colors';
+                if (i < repsCompleted) {
+                    dot.classList.add('bg-green-500');
+                } else {
+                    dot.classList.add('bg-slate-600');
+                }
+                repetitionProgress.appendChild(dot);
+            }
+        }
+
+        // ===== 6. Drawing & Visualization ===== //
+
+        function resizeCanvas() { visualizerCanvas.width = visualizerCanvas.clientWidth * window.devicePixelRatio; visualizerCanvas.height = visualizerCanvas.clientHeight * window.devicePixelRatio; if(!state.running) drawIdleState(); }
+        function drawIdleState() { ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height); ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; ctx.textAlign = 'center'; ctx.font = `${20 * window.devicePixelRatio}px Inter`; ctx.fillText('Click Start to Begin', visualizerCanvas.width / 2, visualizerCanvas.height / 2); }
+        function frequencyToCents(freq, targetFreq) { return 1200 * Math.log2(freq / targetFreq); }
+
+        function drawLoop() {
+            if (!state.running) return; requestAnimationFrame(drawLoop);
+            ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+            const [m, b, s] = Tone.Transport.position.split(':');
+            const phraseProgress = (parseInt(m) % 2) + (parseInt(b) / 4) + (parseFloat(s) / 16);
+            drawMetronomePulses(phraseProgress);
+            if (state.phase === 'listen') {
+                drawListenBarAndText(phraseProgress); drawBuzzSummary();
+            } else { 
+                const buzzMeasureProgress = phraseProgress - 1;
+                const waveform = micAnalyser.getValue(); const freq = autoCorrelate(waveform, Tone.context.sampleRate);
+                const smoothedFreq = getSmoothedPitch(freq);
+                let playerY = -1; let centsOff = null; let isInTune = false;
+                if (smoothedFreq > 0) {
+                    centsOff = frequencyToCents(smoothedFreq, state.exercise.pitches[state.exercise.currentPitchIndex].frequency);
+                    const clampedCents = Math.max(-state.visualCentsRange, Math.min(state.visualCentsRange, centsOff));
+                    playerY = (visualizerCanvas.height / 2) - (clampedCents / state.visualCentsRange) * (visualizerCanvas.height / 2);
+                    isInTune = Math.abs(centsOff) < DIFFICULTY_SETTINGS[state.difficulty].cents;
+                }
+                if (isInTune) {
+                    if (state.pitchInTuneHoldStart === null) { state.pitchInTuneHoldStart = Tone.now(); } 
+                    else if (Tone.now() - state.pitchInTuneHoldStart > CONSTANTS.REQUIRED_HOLD_DURATION_SECONDS) {
+                       state.isPitchHeldSuccessfully = true;
+                       state.pitchInTuneHoldStart = null;
+                    }
+                } else { state.pitchInTuneHoldStart = null; }
+                const scrubberX = buzzMeasureProgress * visualizerCanvas.width;
+                state.buzzPitchHistory.push({ x: scrubberX, y: playerY, cents: centsOff });
+                drawPitchGrid(); drawTargetZone(); drawPlayerLine(); drawScrubber(buzzMeasureProgress);
+            }
+        }
+        
+        function drawPitchGrid() {
+            const halfHeight = visualizerCanvas.height / 2; ctx.beginPath();
+            for (let cents = -state.visualCentsRange; cents <= state.visualCentsRange; cents += 100) {
+                const y = halfHeight - (cents / state.visualCentsRange) * halfHeight;
+                if (cents === 0) continue;
+                ctx.strokeStyle = cents % 200 === 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)';
+                ctx.lineWidth = 1 * window.devicePixelRatio; ctx.moveTo(0, y); ctx.lineTo(visualizerCanvas.width, y);
+            }
+            ctx.stroke(); ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 2 * window.devicePixelRatio;
+            ctx.setLineDash([5 * window.devicePixelRatio, 5 * window.devicePixelRatio]);
+            ctx.moveTo(0, halfHeight); ctx.lineTo(visualizerCanvas.width, halfHeight); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        function drawTargetZone() {
+            const halfHeight = visualizerCanvas.height / 2; const difficultyCents = DIFFICULTY_SETTINGS[state.difficulty].cents;
+            const zoneHeight = (difficultyCents / state.visualCentsRange) * halfHeight;
+            ctx.fillStyle = `rgba(0, 255, 0, ${state.targetZoneOpacity})`;
+            ctx.fillRect(0, halfHeight - zoneHeight, visualizerCanvas.width, zoneHeight * 2);
+        }
+
+        function drawMetronomePulses(phraseProgress) {
+            const beatProgress = (phraseProgress * 4) % 1; 
+            for (let i = 0; i < 4; i++) {
+                let pulseSize = (state.currentBeat === i) ? Math.sin(beatProgress * Math.PI) * 10 * window.devicePixelRatio : 0;
+                ctx.beginPath(); ctx.fillStyle = i === 0 ? 'rgba(96, 165, 250, 0.7)' : 'rgba(100, 116, 139, 0.6)';
+                ctx.arc((visualizerCanvas.width / 8) * (i * 2 + 1), visualizerCanvas.height / 2, (15 + pulseSize) * window.devicePixelRatio, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function drawPlayerLine() {
+            if (state.buzzPitchHistory.length < 2) return;
+            ctx.lineWidth = state.lineThickness * window.devicePixelRatio; ctx.lineCap = 'round';
+            const difficultyCents = DIFFICULTY_SETTINGS[state.difficulty].cents;
+            for (let i = 1; i < state.buzzPitchHistory.length; i++) {
+                const prevPoint = state.buzzPitchHistory[i - 1]; const currentPoint = state.buzzPitchHistory[i];
+                if (prevPoint.y === -1 || currentPoint.y === -1) continue;
+                const absCents = Math.abs(currentPoint.cents); let color = '#ef4444';
+                if (absCents < difficultyCents) { color = '#22c55e'; }
+                else if (absCents < difficultyCents * state.colorCloseMultiplier) { color = '#eab308'; }
+                ctx.beginPath(); ctx.moveTo(prevPoint.x, prevPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y);
+                ctx.strokeStyle = color; ctx.stroke();
+            }
+        }
+        
+        function drawScrubber(progress) {
+            const scrubberX = progress * visualizerCanvas.width;
+            ctx.fillStyle = `rgba(255, 255, 255, ${state.scrubberBrightness})`;
+            ctx.fillRect(scrubberX, 0, 2 * window.devicePixelRatio, visualizerCanvas.height);
+        }
+
+        function drawListenBarAndText(measureProgress) {
+            const FONT_SIZE_LARGE = 48 * window.devicePixelRatio; const FONT_SIZE_SMALL = 32 * window.devicePixelRatio;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; ctx.textAlign = 'center';
+            if (state.currentBeat === 3) {
+                const beatProgress = (measureProgress * 4) % 1; const pulseScale = 1 + Math.sin(beatProgress * Math.PI) * 0.1; 
+                ctx.font = `bold ${FONT_SIZE_LARGE * pulseScale}px Inter`;
+                ctx.fillText('BREATHE', visualizerCanvas.width / 2, visualizerCanvas.height / 2 + (FONT_SIZE_LARGE / 4));
+            } else {
+                const barWidth = (measureProgress / 0.75) * visualizerCanvas.width;
+                ctx.fillStyle = 'rgba(96, 165, 250, 0.5)';
+                ctx.fillRect(0, visualizerCanvas.height * 0.25, barWidth, visualizerCanvas.height * 0.5);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; ctx.font = `bold ${FONT_SIZE_SMALL}px Inter`;
+                ctx.fillText('LISTEN', visualizerCanvas.width / 2, visualizerCanvas.height / 2 + (FONT_SIZE_SMALL / 4));
+            }
+        }
+
+        function drawBuzzSummary() {
+            const timeSinceSummary = Tone.now() - state.lastBuzzSummary.timestamp;
+            const duration = state.summaryDuration; if (timeSinceSummary > duration) return;
+            const progress = timeSinceSummary / duration; const fadeOut = 1 - progress;
+            const scaleUp = Math.sin(progress * Math.PI / 2); const score = state.lastBuzzSummary.score;
+            if (score > 0) {
+                const baseRadius = 40 * window.devicePixelRatio;
+                const radius = baseRadius + (score * 100 * scaleUp) * window.devicePixelRatio;
+                const alpha = fadeOut * 0.7; const isGoodPerformance = score >= 0.5;
+                const color = isGoodPerformance ? '34, 197, 94' : '239, 68, 68';
+                const coreColor = isGoodPerformance ? '167, 243, 208' : '252, 165, 165';
+                ctx.beginPath(); ctx.fillStyle = `rgba(${color}, ${alpha})`;
+                ctx.arc(visualizerCanvas.width / 2, visualizerCanvas.height / 2, radius, 0, 2 * Math.PI); ctx.fill();
+                ctx.beginPath(); ctx.fillStyle = `rgba(${coreColor}, ${alpha * 1.2})`;
+                ctx.arc(visualizerCanvas.width / 2, visualizerCanvas.height / 2, radius * 0.5, 0, 2 * Math.PI); ctx.fill();
+            }
+        }
+        
+        // ===== 7. Initialization & UI Event Listeners ===== //
+
+        function showScreen(screenId) {
+            ['instrument-selection-screen', 'exercise-selection-screen', 'exercise-screen'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            });
+            const screen = document.getElementById(screenId);
+            screen.classList.remove('hidden'); screen.classList.add('flex');
+            state.currentScreen = screenId.replace('-screen', '');
+        }
+
+        function setupEventListeners() {
+            micAgreeBtn.addEventListener('click', requestMicPermission);
+            startStopBtn.addEventListener('click', () => toggleApp());
+            backToInstrumentsBtn.addEventListener('click', () => showScreen('instrument-selection-screen'));
+            
+            backToSelectionBtn.addEventListener('click', () => {
+                completeModal.classList.add('hidden');
+                const pitchSetKey = state.instrument.pitchSet;
+                const selectablePitches = PITCH_SETS[pitchSetKey];
+                state.ui.selectedPitchKeys = [...selectablePitches].slice(0, 5);
+                setupPitchSelector(selectablePitches);
+                showScreen('exercise-selection-screen');
+            });
+
+            changeInstrumentBtn.addEventListener('click', () => {
+                completeModal.classList.add('hidden');
+                showScreen('instrument-selection-screen');
+            });
+
+            backFromExerciseBtn.addEventListener('click', () => {
+                showScreen('exercise-selection-screen');
+            });
+
+            noteSelector.addEventListener('click', e => {
+                const keyEl = e.target.closest('.note-btn');
+                if (!keyEl) return;
+                const pitchId = keyEl.dataset.key;
+                keyEl.classList.toggle('selected');
+                if (state.ui.selectedPitchKeys.includes(pitchId)) {
+                    state.ui.selectedPitchKeys = state.ui.selectedPitchKeys.filter(p => p !== pitchId);
+                } else { state.ui.selectedPitchKeys.push(pitchId); }
+                state.ui.selectedPitchKeys.sort((a, b) => PITCH_LIBRARY[a].frequency - PITCH_LIBRARY[b].frequency);
+                startLongTonesBtn.disabled = state.ui.selectedPitchKeys.length === 0;
+            });
+            startLongTonesBtn.addEventListener('click', () => {
+                state.exercise.repetitionsRequired = parseInt(repetitionsInput.value) || 1;
+                setupExercise(state.ui.selectedPitchKeys); micModal.classList.remove('hidden');
+            });
+            repetitionsInput.addEventListener('input', e => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 1) value = 1; if (value > 10) value = 10;
+                e.target.value = value;
+            });
+            difficultyButtons.forEach(btn => {
+                btn.addEventListener('click', e => {
+                    state.difficulty = e.target.dataset.difficulty;
+                    difficultyButtons.forEach(b => {
+                        b.classList.remove('bg-green-500', 'ring-2', 'ring-white', 'shadow-lg', 'text-white');
+                        b.classList.add('bg-slate-600', 'text-gray-300');
+                    });
+                    e.target.classList.add('bg-green-500', 'ring-2', 'ring-white', 'shadow-lg', 'text-white');
+                    e.target.classList.remove('bg-slate-600', 'text-gray-300');
+                });
+            });
+            tempoSlider.addEventListener('input', e => { state.tempo = parseInt(e.target.value); tempoValue.textContent = state.tempo; if (state.running) Tone.Transport.bpm.value = state.tempo; });
+            smoothingSlider.addEventListener('input', e => { state.smoothingSamples = parseInt(e.target.value); smoothingValue.textContent = state.smoothingSamples; });
+            toleranceSlider.addEventListener('input', e => { const v = parseInt(e.target.value) / 100; state.pitchTolerance = v; toleranceValue.textContent = v.toFixed(2); });
+            yinThresholdSlider.addEventListener('input', e => { const v = parseInt(e.target.value) / 100; state.yinThreshold = v; yinThresholdValue.textContent = v.toFixed(2); });
+            visualRangeSlider.addEventListener('input', e => { state.visualCentsRange = parseInt(e.target.value); visualRangeValue.textContent = state.visualCentsRange; });
+            lineThicknessSlider.addEventListener('input', e => { state.lineThickness = parseInt(e.target.value); lineThicknessValue.textContent = state.lineThickness; });
+            colorMultiplierSlider.addEventListener('input', e => { const v = parseInt(e.target.value) / 10; state.colorCloseMultiplier = v; colorMultiplierValue.textContent = v.toFixed(1); });
+            metronomeVolumeSlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.metronomeVolume = v; metronomeVolumeValue.textContent = `${v} dB`; if (metronome) metronome.volume.value = v; });
+            targetOpacitySlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.targetZoneOpacity = v / 100; targetOpacityValue.textContent = `${v}%`; });
+            scrubberBrightnessSlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.scrubberBrightness = v / 100; scrubberBrightnessValue.textContent = `${v}%`; });
+            summaryDurationSlider.addEventListener('input', e => { const v = parseInt(e.target.value) / 10; state.summaryDuration = v; summaryDurationValue.textContent = `${v.toFixed(1)}s`; });
+        }
+        
+        async function requestMicPermission() {
+            micStep1.classList.add('hidden'); micStep2.classList.remove('hidden');
+            try {
+                userMedia = new Tone.UserMedia(); await userMedia.open(); await setupAudioEngine();
+                micModal.classList.add('hidden'); micStep2.classList.add('hidden'); micStep1.classList.remove('hidden');
+                showScreen('exercise-screen'); resizeCanvas();
+            } catch (err) {
+                console.error("Microphone access denied.", err);
+                micStep2.classList.add('hidden'); micStep3.classList.remove('hidden');
+            }
+        }
+        
+        async function setupAudioEngine() {
+             await Tone.start();
+            micAnalyser = new Tone.Analyser('waveform', 2048); userMedia.connect(micAnalyser);
+            metronome = new Tone.MembraneSynth().toDestination(); metronome.volume.value = state.metronomeVolume;
+            targetPitchSynth = new Tone.FMSynth({ harmonicity: 2, modulationIndex: 10, envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.1 }, modulationEnvelope: { attack: 0.05, decay: 0.01, sustain: 1, release: 0.5 } }).toDestination();
+        }
+
+        function setupInstrumentSelection() {
+            const container = document.querySelector('#instrument-selection-screen .grid');
+            container.innerHTML = Object.keys(INSTRUMENTS).map(key => `
+                <button data-instrument="${key}" class="instrument-btn p-4 h-24 flex items-center justify-center text-center bg-slate-800 rounded-lg shadow-lg hover:bg-slate-700 hover:ring-2 hover:ring-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <p class="text-lg font-semibold text-white">${INSTRUMENTS[key].name}</p>
+                </button>
+            `).join('');
+            document.querySelectorAll('.instrument-btn').forEach(btn => btn.addEventListener('click', handleInstrumentSelection));
+        }
+        
+        function handleInstrumentSelection(e) {
+            const instrumentKey = e.currentTarget.dataset.instrument;
+            state.instrument = INSTRUMENTS[instrumentKey];
+            const pitchSetKey = state.instrument.pitchSet;
+            const selectablePitches = PITCH_SETS[pitchSetKey];
+            state.ui.selectedPitchKeys = [...selectablePitches].slice(0, 5); // Default to first 5 notes
+            setupPitchSelector(selectablePitches); // Re-render the note buttons for the correct octave
+            showScreen('exercise-selection-screen');
+        }
+
+        function setupPitchSelector(pitchIds) {
+            noteSelector.innerHTML = pitchIds.map(pitchId => {
+                const isSelected = state.ui.selectedPitchKeys.includes(pitchId);
+                return `<button class="note-btn p-3 rounded-md text-lg font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors ${isSelected ? 'selected' : ''}" data-key="${pitchId}">${getDisplayName(pitchId)}</button>`;
+            }).join('');
+
+            startLongTonesBtn.disabled = state.ui.selectedPitchKeys.length === 0;
+        }
+
+        // --- App Entry Point ---
+        function init() {
+            setupInstrumentSelection();
+            setupEventListeners();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            drawIdleState();
+            showScreen('instrument-selection-screen');
+        }
+        
+        init();
+
+    </script>
+
+</body>
+</html>
+
+
