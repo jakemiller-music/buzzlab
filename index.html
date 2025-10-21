@@ -85,11 +85,31 @@
             animation: point-up-left 1.5s infinite;
         }
         
-        /* Note selection button style */
-        .note-btn.selected {
+        /* Selection button style */
+        .selectable-btn.selected {
             background-color: #60a5fa; /* blue-400 */
             color: white;
             border-color: #2563eb; /* blue-600 */
+        }
+
+        /* Custom toggle switch for Random Order */
+        .toggle-bg:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            background: white;
+            border-radius: 9999px;
+            width: 1.25rem;
+            height: 1.25rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        input:checked + .toggle-bg:after {
+            transform: translateX(100%);
+        }
+        input:checked + .toggle-bg {
+            background-color: #60a5fa;
+            border-color: #60a5fa;
         }
 
     </style>
@@ -116,23 +136,42 @@
 
         <!-- ===== Screen: Exercise Selection ===== -->
         <div id="exercise-selection-screen" class="hidden flex-col items-center justify-center text-center h-full">
-            <header class="mb-8 md:mb-12">
+            <header class="mb-8">
                 <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Create Your Exercise</h1>
-                <p class="text-lg md:text-xl text-blue-300 mt-2">Tap the notes you want to practice.</p>
+                <p class="text-lg md:text-xl text-blue-300 mt-2">Choose an exercise type to begin.</p>
             </header>
             <div class="w-full max-w-3xl p-4 bg-slate-800 rounded-lg">
-                 <!-- Repetitions Selector -->
-                <div class="flex items-center justify-center gap-3 mb-4">
-                    <label for="repetitions-input" class="text-lg text-gray-300">Successful repetitions per note:</label>
-                    <input type="number" id="repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
+                <!-- Exercise Type Selector -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <button id="select-long-tones" class="selectable-btn p-4 rounded-md text-xl font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors">Long Tones</button>
+                    <button id="select-contours" class="selectable-btn p-4 rounded-md text-xl font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors">Contours</button>
                 </div>
-                <!-- Note Selection Buttons -->
-                <div id="note-selector" class="grid grid-cols-4 sm:grid-cols-8 gap-3 p-4 bg-slate-900/50 rounded-md">
-                    <!-- Note buttons will be dynamically inserted here -->
+                
+                <!-- Long Tones Options -->
+                <div id="long-tones-options" class="hidden">
+                    <div class="flex items-center justify-center gap-3 mb-4">
+                        <label for="repetitions-input" class="text-lg text-gray-300">Successful reps per note:</label>
+                        <input type="number" id="repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div id="note-selector" class="grid grid-cols-4 sm:grid-cols-8 gap-3 p-4 bg-slate-900/50 rounded-md"></div>
+                    <button id="start-long-tones-btn" class="mt-4 w-full p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Long Tones</button>
                 </div>
-                 <div class="mt-4 flex flex-col sm:flex-row gap-4">
-                    <button id="start-long-tones-btn" class="flex-1 p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Long Tones</button>
-                    <button id="start-contour-btn" class="flex-1 p-4 bg-slate-600 hover:bg-slate-500 rounded-md text-gray-300 font-bold">Simple Contour (Coming Soon)</button>
+
+                <!-- Contours Options -->
+                <div id="contours-options" class="hidden">
+                     <div class="flex items-center justify-center gap-3 mb-4">
+                        <label for="contour-repetitions-input" class="text-lg text-gray-300">Successful reps per pattern:</label>
+                        <input type="number" id="contour-repetitions-input" min="1" max="10" value="1" class="w-20 text-center text-xl font-bold bg-slate-700 text-white rounded-md border-2 border-slate-600 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div id="contour-range-selector" class="grid grid-cols-3 gap-3 mb-4 p-4 bg-slate-900/50 rounded-md"></div>
+                     <div class="flex items-center justify-center gap-4 mb-4">
+                        <label for="random-order-toggle" class="text-lg text-gray-300">Random Order:</label>
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="random-order-toggle" id="random-order-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer hidden"/>
+                            <label for="random-order-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-600 cursor-pointer toggle-bg border-2 border-slate-500"></label>
+                        </div>
+                    </div>
+                    <button id="start-contours-btn" class="mt-4 w-full p-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white font-bold transition-colors">Start Contours</button>
                 </div>
             </div>
              <button id="back-to-instruments-btn" class="mt-6 text-blue-300 hover:text-white transition-colors">← Back to Instrument Selection</button>
@@ -143,7 +182,7 @@
         <div id="exercise-screen" class="hidden flex-col h-full w-full">
             <!-- Exercise Info Header -->
             <div class="flex-shrink-0 mb-2 text-center">
-                <p class="text-lg text-gray-400">Current Note:</p>
+                <p id="current-exercise-title" class="text-lg text-gray-400">Current Note:</p>
                 <p id="current-note-display" class="text-4xl font-bold text-blue-300">--</p>
                 <div id="repetition-progress" class="flex justify-center items-center gap-2 h-6 mt-1"></div>
                 <div id="pitch-queue-display" class="h-6 mt-1 text-sm text-gray-500"></div>
@@ -187,8 +226,8 @@
                         </div>
                         <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
                             <span class="text-sm font-medium text-gray-400 w-36 text-right">Signal Threshold</span>
-                            <input id="tolerance-slider" type="range" min="1" max="20" value="3" class="flex-1">
-                            <span id="tolerance-value" class="text-lg font-semibold text-white w-12 text-center">0.03</span>
+                            <input id="tolerance-slider" type="range" min="1" max="20" value="2" class="flex-1">
+                            <span id="tolerance-value" class="text-lg font-semibold text-white w-12 text-center">0.02</span>
                         </div>
                          <div class="w-full md:w-5/6 lg:w-2/3 flex items-center gap-3">
                             <span class="text-sm font-medium text-gray-400 w-36 text-right">YIN Threshold</span>
@@ -297,84 +336,70 @@
         // ================================================================= //
 
         // ===== 1. Constants and Libraries ===== //
-
-        const CONSTANTS = {
-            LOOP_DURATION_MEASURES: 2,
-            REQUIRED_HOLD_DURATION_SECONDS: 2.0, 
-        };
-
+        
         const PITCH_LIBRARY = {
-            'Bb1': { name: 'B♭', transposed: { F: 'F' }, frequency: 58.27 },
-            'C2':  { name: 'C',  transposed: { F: 'G' }, frequency: 65.41 },
-            'D2':  { name: 'D',  transposed: { F: 'A' }, frequency: 73.42 },
-            'Eb2': { name: 'E♭', transposed: { F: 'B♭' }, frequency: 77.78 },
-            'F2':  { name: 'F',  transposed: { F: 'C' }, frequency: 87.31 },
-            'G2':  { name: 'G',  transposed: { F: 'D' }, frequency: 98.00 },
-            'A2':  { name: 'A',  transposed: { F: 'E' }, frequency: 110.00 },
-            'Bb2': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 116.54 },
-            'C3':  { name: 'C',  transposed: { Bb: 'D', F: 'G' }, frequency: 130.81 },
-            'D3':  { name: 'D',  transposed: { Bb: 'E', F: 'A' }, frequency: 146.83 },
-            'Eb3': { name: 'E♭', transposed: { Bb: 'F', F: 'B♭' }, frequency: 155.56 },
-            'F3':  { name: 'F',  transposed: { Bb: 'G', F: 'C' }, frequency: 174.61 },
-            'G3':  { name: 'G',  transposed: { Bb: 'A', F: 'D' }, frequency: 196.00 },
-            'A3':  { name: 'A',  transposed: { Bb: 'B', F: 'E' }, frequency: 220.00 },
-            'Bb3': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 233.08 },
-            'C4':  { name: 'C',  transposed: { Bb: 'D', F: 'G' }, frequency: 261.63 },
-            'D4':  { name: 'D',  transposed: { Bb: 'E', F: 'A' }, frequency: 293.66 },
-            'Eb4': { name: 'E♭', transposed: { Bb: 'F', F: 'B♭' }, frequency: 311.13 },
-            'F4':  { name: 'F',  transposed: { Bb: 'G', F: 'C' }, frequency: 349.23 },
-            'G4':  { name: 'G',  transposed: { Bb: 'A', F: 'D' }, frequency: 392.00 },
-            'A4':  { name: 'A',  transposed: { Bb: 'B', F: 'E' }, frequency: 440.00 },
-            'Bb4': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 466.16 },
+            'Bb1': { name: 'B♭', transposed: { F: 'F' }, frequency: 58.27 }, 'C2':  { name: 'C',  transposed: { F: 'G' }, frequency: 65.41 },
+            'D2':  { name: 'D',  transposed: { F: 'A' }, frequency: 73.42 }, 'Eb2': { name: 'E♭', transposed: { F: 'B♭' }, frequency: 77.78 },
+            'F2':  { name: 'F',  transposed: { F: 'C' }, frequency: 87.31 }, 'G2':  { name: 'G',  transposed: { F: 'D' }, frequency: 98.00 },
+            'A2':  { name: 'A',  transposed: { F: 'E' }, frequency: 110.00 }, 'Bb2': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 116.54 },
+            'C3':  { name: 'C',  transposed: { Bb: 'D', F: 'G' }, frequency: 130.81 }, 'D3':  { name: 'D',  transposed: { Bb: 'E', F: 'A' }, frequency: 146.83 },
+            'Eb3': { name: 'E♭', transposed: { Bb: 'F', F: 'B♭' }, frequency: 155.56 }, 'F3':  { name: 'F',  transposed: { Bb: 'G', F: 'C' }, frequency: 174.61 },
+            'G3':  { name: 'G',  transposed: { Bb: 'A', F: 'D' }, frequency: 196.00 }, 'A3':  { name: 'A',  transposed: { Bb: 'B', F: 'E' }, frequency: 220.00 },
+            'Bb3': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 233.08 }, 'C4':  { name: 'C',  transposed: { Bb: 'D', F: 'G' }, frequency: 261.63 },
+            'D4':  { name: 'D',  transposed: { Bb: 'E', F: 'A' }, frequency: 293.66 }, 'Eb4': { name: 'E♭', transposed: { Bb: 'F', F: 'B♭' }, frequency: 311.13 },
+            'F4':  { name: 'F',  transposed: { Bb: 'G', F: 'C' }, frequency: 349.23 }, 'G4':  { name: 'G',  transposed: { Bb: 'A', F: 'D' }, frequency: 392.00 },
+            'A4':  { name: 'A',  transposed: { Bb: 'B', F: 'E' }, frequency: 440.00 }, 'Bb4': { name: 'B♭', transposed: { Bb: 'C', F: 'F' }, frequency: 466.16 },
         };
 
         const PITCH_SETS = {
-            high: ['F3', 'G3', 'A3', 'Bb3', 'C4', 'D4', 'Eb4', 'F4'],
-            low: ['Bb2', 'C3', 'D3', 'Eb3', 'F3'],
-            tuba: ['Bb1', 'C2', 'D2', 'Eb2', 'F2'],
+            trumpet: ['Bb3', 'C4', 'D4', 'Eb4', 'F4', 'G4', 'A4', 'Bb4'],
+            horn: ['F3', 'G3', 'A3', 'Bb3', 'C4', 'D4', 'Eb4', 'F4'],
+            low: ['Bb2', 'C3', 'D3', 'Eb3', 'F3', 'G3', 'A3', 'Bb3'],
+            tuba: ['Bb1', 'C2', 'D2', 'Eb2', 'F2', 'G2', 'A2', 'Bb2'],
         };
- PITCH_SETS.horn = ['F3', 'G3', 'A3', 'Bb3', 'C4', 'D4', 'Eb4', 'F4'];
-
-
+ 
         const INSTRUMENTS = {
-            trumpet: { name: 'Trumpet (B♭)', pitchSet: 'high', transposition: 'Bb' },
-            horn: { name: 'French Horn (F)', pitchSet: 'high', transposition: 'F' },
+            trumpet: { name: 'Trumpet (B♭)', pitchSet: 'trumpet', transposition: 'Bb' },
+            horn: { name: 'French Horn (F)', pitchSet: 'horn', transposition: 'F' },
             trombone: { name: 'Trombone / Baritone', pitchSet: 'low', transposition: null },
             tuba: { name: 'Tuba', pitchSet: 'tuba', transposition: null },
         };
 
         const DIFFICULTY_SETTINGS = {
-            easy: { cents: 100 },
-            medium: { cents: 60 },
-            hard: { cents: 30 }
+            easy: { cents: 100 }, medium: { cents: 60 }, hard: { cents: 30 }
         };
 
         // ===== 2. DOM Element References ===== //
         const {
             instrumentScreen, exerciseSelectionScreen, exerciseScreen, startStopBtn,
-            tempoSlider, tempoValue, backToInstrumentsBtn,
-            noteSelector, startLongTonesBtn, repetitionsInput, currentNoteDisplay,
-            pitchQueueDisplay, repetitionProgress, completeModal, backToSelectionBtn,
-            changeInstrumentBtn, backFromExerciseBtn, smoothingSlider, smoothingValue,
-            toleranceSlider, toleranceValue, yinThresholdSlider, yinThresholdValue,
-            visualRangeSlider, visualRangeValue, lineThicknessSlider, lineThicknessValue,
-            colorMultiplierSlider, colorMultiplierValue, metronomeVolumeSlider,
-            metronomeVolumeValue, targetOpacitySlider, targetOpacityValue,
-            scrubberBrightnessSlider, scrubberBrightnessValue, summaryDurationSlider,
-            summaryDurationValue, micModal, micStep1, micStep2, micStep3, micAgreeBtn
+            tempoSlider, tempoValue, backToInstrumentsBtn, selectLongTones, selectContours,
+            longTonesOptions, contoursOptions, noteSelector, startLongTonesBtn, repetitionsInput, 
+            currentNoteDisplay, pitchQueueDisplay, repetitionProgress, completeModal, 
+            backToSelectionBtn, changeInstrumentBtn, backFromExerciseBtn, smoothingSlider, 
+            smoothingValue, toleranceSlider, toleranceValue, yinThresholdSlider, 
+            yinThresholdValue, visualRangeSlider, visualRangeValue, lineThicknessSlider, 
+            lineThicknessValue, colorMultiplierSlider, colorMultiplierValue, 
+            metronomeVolumeSlider, metronomeVolumeValue, targetOpacitySlider, 
+            targetOpacityValue, scrubberBrightnessSlider, scrubberBrightnessValue, 
+            summaryDurationSlider, summaryDurationValue, micModal, micStep1, micStep2, 
+            micStep3, micAgreeBtn,
+            contourRangeSelector, startContoursBtn, randomOrderToggle, currentExerciseTitle,
+            contourRepetitionsInput
         } = Object.fromEntries(
             [
                 'instrument-selection-screen', 'exercise-selection-screen', 'exercise-screen', 'start-stop-btn',
-                'tempo-slider', 'tempo-value', 'back-to-instruments-btn',
-                'note-selector', 'start-long-tones-btn', 'repetitions-input', 'current-note-display',
-                'pitch-queue-display', 'repetition-progress', 'complete-modal', 'back-to-selection-btn',
-                'change-instrument-btn', 'back-from-exercise-btn', 'smoothing-slider', 'smoothing-value',
-                'tolerance-slider', 'tolerance-value', 'yin-threshold-slider', 'yin-threshold-value',
-                'visual-range-slider', 'visual-range-value', 'line-thickness-slider', 'line-thickness-value',
-                'color-multiplier-slider', 'color-multiplier-value', 'metronome-volume-slider',
+                'tempo-slider', 'tempo-value', 'back-to-instruments-btn', 'select-long-tones', 'select-contours',
+                'long-tones-options', 'contours-options', 'note-selector', 'start-long-tones-btn', 'repetitions-input', 
+                'current-note-display', 'pitch-queue-display', 'repetition-progress', 'complete-modal', 
+                'back-to-selection-btn', 'change-instrument-btn', 'back-from-exercise-btn', 'smoothing-slider', 
+                'smoothing-value', 'tolerance-slider', 'tolerance-value', 'yin-threshold-slider', 
+                'yin-threshold-value', 'visual-range-slider', 'visual-range-value', 'line-thickness-slider', 
+                'line-thickness-value', 'color-multiplier-slider', 'color-multiplier-value', 'metronome-volume-slider',
                 'metronome-volume-value', 'target-opacity-slider', 'target-opacity-value',
                 'scrubber-brightness-slider', 'scrubber-brightness-value', 'summary-duration-slider',
-                'summary-duration-value', 'mic-modal', 'mic-step-1', 'mic-step-2', 'mic-step-3', 'mic-agree-btn'
+                'summary-duration-value', 'mic-modal', 'mic-step-1', 'mic-step-2', 'mic-step-3', 'mic-agree-btn',
+                'contour-range-selector', 'start-contours-btn', 'random-order-toggle', 'current-exercise-title',
+                'contour-repetitions-input'
             ].map(id => [id.replace(/-(\w)/g, (m, g) => g.toUpperCase()), document.getElementById(id)])
         );
         const difficultyButtons = document.querySelectorAll('.difficulty-btn');
@@ -384,53 +409,28 @@
         // ===== 3. Application State ===== //
 
         const DEFAULTS = {
-            tempo: 60,
-            difficulty: 'easy',
-            smoothingSamples: 52,
-            pitchTolerance: 0.03,
-            yinThreshold: 0.20,
-            visualCentsRange: 800,
-            lineThickness: 6,
-            colorCloseMultiplier: 3.0,
-            metronomeVolume: -6,
-            targetZoneOpacity: 0.15,
-            scrubberBrightness: 0.8,
-            summaryDuration: 2.0,
+            tempo: 60, difficulty: 'easy', smoothingSamples: 52, pitchTolerance: 0.02, yinThreshold: 0.20,
+            visualCentsRange: 800, lineThickness: 6, colorCloseMultiplier: 3.0, metronomeVolume: -6,
+            targetZoneOpacity: 0.15, scrubberBrightness: 0.8, summaryDuration: 2.0,
         };
 
         const state = {
-            currentScreen: 'instrument',
-            ui: { selectedPitchKeys: [] },
-            instrument: null,
-            running: false,
+            currentScreen: 'instrument', 
+            ui: { 
+                selectedPitchKeys: [],
+                selectedContourRange: null,
+                isRandomOrder: false,
+            }, 
+            instrument: null, running: false,
             exercise: { 
-                type: 'longTone', 
-                pitches: [], 
-                currentPitchIndex: 0, 
-                isComplete: false,
-                repetitionsRequired: 1,
-                currentPitchRepetitionsCompleted: 0,
+                type: 'longTone', pitches: [], currentPitchIndex: 0, isComplete: false,
+                repetitionsRequired: 1, currentPitchRepetitionsCompleted: 0,
             },
-            currentBeat: 0,
-            phase: 'listen',
-            buzzPitchHistory: [],
-            lastSmoothedPitch: -1,
-            lastBuzzSummary: { score: 0, timestamp: 0 },
-            pitchInTuneHoldStart: null,
+            currentBeat: 0, phase: 'listen', buzzPitchHistory: [], lastSmoothedPitch: -1,
+            lastBuzzSummary: { score: 0, timestamp: 0 }, pitchInTuneHoldStart: null,
             isPitchHeldSuccessfully: false,
             // --- Settings ---
-            tempo: DEFAULTS.tempo,
-            difficulty: DEFAULTS.difficulty,
-            smoothingSamples: DEFAULTS.smoothingSamples,
-            pitchTolerance: DEFAULTS.pitchTolerance,
-            yinThreshold: DEFAULTS.yinThreshold,
-            visualCentsRange: DEFAULTS.visualCentsRange,
-            lineThickness: DEFAULTS.lineThickness,
-            colorCloseMultiplier: DEFAULTS.colorCloseMultiplier,
-            metronomeVolume: DEFAULTS.metronomeVolume,
-            targetZoneOpacity: DEFAULTS.targetZoneOpacity,
-            scrubberBrightness: DEFAULTS.scrubberBrightness,
-            summaryDuration: DEFAULTS.summaryDuration,
+            ...DEFAULTS
         };
         
         // ===== 4. Audio Components ===== //
@@ -480,7 +480,7 @@
             if (state.running && !isCurrentlyRunning) {
                 startStopBtn.textContent = 'Stop'; startStopBtn.classList.replace('bg-blue-600', 'bg-red-600'); startStopBtn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
                 backFromExerciseBtn.classList.add('hidden');
-                Tone.Transport.loop = true; Tone.Transport.loopEnd = `${CONSTANTS.LOOP_DURATION_MEASURES}m`; Tone.Transport.bpm.value = state.tempo;
+                Tone.Transport.loop = true; Tone.Transport.loopEnd = '2m'; Tone.Transport.bpm.value = state.tempo;
                 
                 mainLoop = new Tone.Loop(time => {
                     const [measure, beat] = Tone.Transport.position.split(':').map(Number);
@@ -635,7 +635,7 @@
                 }
                 if (isInTune) {
                     if (state.pitchInTuneHoldStart === null) { state.pitchInTuneHoldStart = Tone.now(); } 
-                    else if (Tone.now() - state.pitchInTuneHoldStart > CONSTANTS.REQUIRED_HOLD_DURATION_SECONDS) {
+                    else if (Tone.now() - state.pitchInTuneHoldStart > 2.0) {
                        state.isPitchHeldSuccessfully = true;
                        state.pitchInTuneHoldStart = null;
                     }
@@ -809,6 +809,21 @@
             targetOpacitySlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.targetZoneOpacity = v / 100; targetOpacityValue.textContent = `${v}%`; });
             scrubberBrightnessSlider.addEventListener('input', e => { const v = parseInt(e.target.value); state.scrubberBrightness = v / 100; scrubberBrightnessValue.textContent = `${v}%`; });
             summaryDurationSlider.addEventListener('input', e => { const v = parseInt(e.target.value) / 10; state.summaryDuration = v; summaryDurationValue.textContent = `${v.toFixed(1)}s`; });
+             // Exercise Type Selection
+            selectLongTones.addEventListener('click', () => {
+                selectLongTones.classList.add('selected');
+                selectContours.classList.remove('selected');
+                longTonesOptions.classList.remove('hidden');
+                contoursOptions.classList.add('hidden');
+                state.exercise.type = 'longTone';
+            });
+            selectContours.addEventListener('click', () => {
+                selectContours.classList.add('selected');
+                selectLongTones.classList.remove('selected');
+                contoursOptions.classList.remove('hidden');
+                longTonesOptions.classList.add('hidden');
+                state.exercise.type = 'contour';
+            });
         }
         
         async function requestMicPermission() {
@@ -847,13 +862,19 @@
             const selectablePitches = PITCH_SETS[pitchSetKey];
             state.ui.selectedPitchKeys = [...selectablePitches].slice(0, 5); // Default to first 5 notes
             setupPitchSelector(selectablePitches); // Re-render the note buttons for the correct octave
+             // Default to Long Tones view
+            selectLongTones.classList.add('selected');
+            selectContours.classList.remove('selected');
+            longTonesOptions.classList.remove('hidden');
+            contoursOptions.classList.add('hidden');
+            state.exercise.type = 'longTone';
             showScreen('exercise-selection-screen');
         }
 
         function setupPitchSelector(pitchIds) {
             noteSelector.innerHTML = pitchIds.map(pitchId => {
                 const isSelected = state.ui.selectedPitchKeys.includes(pitchId);
-                return `<button class="note-btn p-3 rounded-md text-lg font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors ${isSelected ? 'selected' : ''}" data-key="${pitchId}">${getDisplayName(pitchId)}</button>`;
+                return `<button class="note-btn selectable-btn p-3 rounded-md text-lg font-bold border-2 border-slate-600 bg-slate-700 text-gray-300 transition-colors ${isSelected ? 'selected' : ''}" data-key="${pitchId}">${getDisplayName(pitchId)}</button>`;
             }).join('');
 
             startLongTonesBtn.disabled = state.ui.selectedPitchKeys.length === 0;
